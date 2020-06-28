@@ -397,7 +397,7 @@ int getNumberLines(string path) {
 	return number_of_lines;
 }
 
-void Shop::readFileHoaDonFromText(string staticPath) {
+string Shop::readFileHoaDonFromText(string staticPath) {
 	vector<string> listFiles;
 	int checkChooseMain;
 	listFiles = listFilesInDirectory(staticPath);
@@ -420,48 +420,7 @@ void Shop::readFileHoaDonFromText(string staticPath) {
 
 	string path = "Database\\hoadon\\";
 	path.append(listFiles[choosedCase7 - 1]);
-
-	string line;
-	string soHD;
-	string date;
-	string tenKH;
-	string biller;
-	ifstream myfile(path);
-	cout << endl;
-	if (myfile.is_open())
-	{
-		int flag = 0;
-		int maxSize = getNumberLines(path);
-		while (myfile.good())
-		{
-			getline(myfile, line);
-			flag++;
-			if (flag <= 3 || flag >= maxSize) {
-				if (flag == 1) {
-					soHD = split(line, ":")[1];
-				}
-				else if (flag == 2) {
-					date = split(line, ":")[1];
-				}
-				else if (flag == 3) {
-					tenKH = split(line, ":")[1];
-				}
-				else {
-					biller = split(line, ":")[1];
-				}
-			}
-			else if (flag > 5 && flag < maxSize) {
-				HoaDon hd = readLineFileHoaDon(line, flag, maxSize - 2);
-				if (hd.getHangHoa().getTenMatHang() != "") {
-					listHoaDon.add(hd);
-				}
-			}
-			else {
-				continue;
-			}
-		}
-		myfile.close();
-	}
+	return path;
 }
 
 void Shop::createHoaDon(string paths) {
@@ -617,8 +576,235 @@ mainAdd:
 	else cout << "Unable to open file";
 }
 
+void updateHoaDonNew(string path, string sizeAsSoHD, string date, string tenKH, ArrayList<HoaDon> tempList, string biller) {
+	TextTable t('-', '|', '+');
+	t.add("STT");
+	t.add("Ten mat hang");
+	t.add("So luong");
+	t.add("Don gia");
+	t.add("Thanh tien");
+	t.endOfRow();
+
+	float total = 0;
+	for (int i = 0; i < tempList.getSize();i++) {
+		string stt = to_string(i + 1);
+		t.add(stt);
+		t.add(tempList.getArray()[i].getHangHoa().getTenMatHang());
+		t.add(to_string(tempList.getArray()[i].getSoLuong()));
+		t.add(to_string(tempList.getArray()[i].getHangHoa().getDonGia()));
+		t.add(to_string(tempList.getArray()[i].getThanhTien()));
+		total = total + tempList.getArray()[i].getThanhTien();
+
+		t.endOfRow();
+	}
+
+	t.add("Cong");
+	t.add("");
+	t.add("");
+	t.add("");
+	t.add(to_string(total));
+	t.endOfRow();
+	t.setAlignment(5, TextTable::Alignment::RIGHT);
+	const int result = remove(path.c_str());
+	if (result == 0) {
+		ofstream myfile(path);
+		if (myfile.is_open())
+		{
+			myfile << "So HD:" << sizeAsSoHD << endl;
+			myfile << "Ngay:" << date << endl;
+			myfile << "Ten khach hang:" << tenKH << endl;
+			myfile << t;
+			myfile << "Nguoi lap hoa don:" << biller;
+			myfile.close();
+		}
+		else cout << "Unable to open file";
+	}
+	else {
+		cout << "\n No such file or directory :" << strerror(errno); // No such file or directory
+	}
+
+}
+
 void Shop::updateHoaDon(string path) {
-	readFileHoaDonFromText(path);
+	ArrayList<HoaDon> listHoaDonNew;
+	string pathFileUpdate = readFileHoaDonFromText(path);
+	ArrayList<HoaDon> tempList;
+	string line;
+	string soHD;
+	string date;
+	string tenKH;
+	string biller;
+	ifstream myfile(pathFileUpdate);
+	
+	if (myfile.is_open())
+	{
+		int flag = 0;
+		int maxSize = getNumberLines(pathFileUpdate);
+		while (myfile.good())
+		{
+			getline(myfile, line);
+			flag++;
+			if (flag <= 3 || flag >= maxSize) {
+				if (flag == 1) {
+					soHD = split(line, ":")[1];
+				}
+				else if (flag == 2) {
+					date = split(line, ":")[1];
+				}
+				else if (flag == 3) {
+					tenKH = split(line, ":")[1];
+				}
+				else {
+					biller = split(line, ":")[1];
+				}
+			}
+			else if (flag > 5 && flag < maxSize) {
+				HoaDon hd = readLineFileHoaDon(line, flag, maxSize - 2);
+				if (hd.getHangHoa().getTenMatHang() != "") {
+					tempList.add(hd);
+				}
+			}
+			else {
+				continue;
+			}
+		}
+
+		
+		myfile.close();
+	mainUpdate:
+		string chooseUpdate;
+		bool checkUpdateContinue = false;
+		cout << "Ban muon sua:" << endl;
+		cout << "1. Ten khach hang." << endl;
+		cout << "2. San pham : " << endl;
+		cout << "3. Nguoi lap hoa don : " << endl;
+		cout << "4. Thoat : " << endl;
+		cout << "Nhap lua chon cua ban : ";
+		do {
+			getline(cin, chooseUpdate);
+			checkUpdateContinue = checkChoose(chooseUpdate, 1, 4);
+			if (!checkUpdateContinue) {
+				cout << "\n Lua chon khong chinh xac. Nhap lai : ";
+			}
+		} while (!checkUpdateContinue);
+		switch (stoi(chooseUpdate))
+		{
+		case 1: {
+			string tenKHUpdate;
+			do {
+				cout << "Nhap ten khach hang can chinh sua :" << endl;
+				getline(cin, tenKHUpdate);
+				if (isNumber(tenKHUpdate)) {
+					cout << "Ban nhap so, Moi nhap lai: ";
+				}
+			} while (isNumber(tenKHUpdate));
+			tenKH = tenKHUpdate;
+			updateHoaDonNew(pathFileUpdate, soHD, date, tenKH, tempList, biller);
+			/*goto mainUpdate;*/
+			break;
+		}
+		case 2: {
+		mainAdd:
+			system("cls");
+			cout << endl << "- Them san pham vao hoa don khong : " << endl;
+			cout << "1. Yes ." << endl;
+			cout << "2. No ." << endl;
+			bool checkChooseContinue = false;
+			string chooseContinueTemp;
+			cout << "Nhap lua chon cua ban : ";
+			do {
+				getline(cin, chooseContinueTemp);
+				checkChooseContinue = checkChoose(chooseContinueTemp, 1, 2);
+				if (!checkChooseContinue) {
+					cout << "\n Lua chon khong chinh xac. Nhap lai : ";
+				}
+			} while (!checkChooseContinue);
+			switch (stoi(chooseContinueTemp))
+			{
+			case 1: {
+				getAllHangHoa(listHangHoa);
+				string positionHangHoa;
+				cout << "\n Nhap lua chon cua ban : ";
+				do {
+					getline(cin, positionHangHoa);
+					if (!checkChoose(positionHangHoa, 1, listHangHoa.getSize())) {
+						cout << "\n Lua chon khong chinh xac. Nhap lai : ";
+					}
+				} while (!checkChoose(positionHangHoa, 1, listHangHoa.getSize()));
+
+				string tenHangHoa = listHangHoa.getArray()[stoi(positionHangHoa) - 1].getTenMatHang();
+				float donGia = listHangHoa.getArray()[stoi(positionHangHoa) - 1].getDonGia();
+
+				string soLuong;
+				do {
+					cout << endl << "\n - Nhap so luong: ";
+					getline(cin, soLuong);
+					if (!isNumber(soLuong)) {
+						cout << "Ban nhap text, Moi nhap lai: ";
+					}
+				} while (!isNumber(soLuong));
+
+				float thanhTien = donGia * stoi(soLuong);
+
+				bool flagAsSame = false;
+				if (listHoaDonNew.getSize() > 0) {
+					for (int i = 0;i < listHoaDonNew.getSize();i++) {
+						if (listHangHoa.getArray()[stoi(positionHangHoa) - 1].getTenMatHang() == listHoaDonNew.getArray()[i].getHangHoa().getTenMatHang()) {
+							int slTemp = listHoaDonNew.getArray()[i].getSoLuong();
+							listHoaDonNew.remove(i);
+							HoaDon hoaDonTemp(listHangHoa.getArray()[stoi(positionHangHoa) - 1], stoi(soLuong) + slTemp,
+								(stoi(soLuong) + slTemp) * (listHangHoa.getArray()[stoi(positionHangHoa) - 1].getDonGia()));
+							listHoaDonNew.add(hoaDonTemp);
+							flagAsSame = true;
+						}
+						else
+							flagAsSame = false;
+					}
+
+					if (!flagAsSame) {
+						HoaDon hoaDonTemp(listHangHoa.getArray()[stoi(positionHangHoa) - 1], stoi(soLuong), thanhTien);
+						listHoaDonNew.add(hoaDonTemp);
+					}
+				}
+				else {
+					HoaDon hoaDonTemp(listHangHoa.getArray()[stoi(positionHangHoa) - 1], stoi(soLuong), thanhTien);
+					listHoaDonNew.add(hoaDonTemp);
+				}
+
+				updateHoaDonNew(pathFileUpdate, soHD, date, tenKH, listHoaDonNew, biller);
+				goto mainAdd;
+			}
+			case 2: {
+				cout << "\n San pham xac nhan. ";
+				break;
+			}
+			default:
+				break;
+			}
+			goto mainUpdate;
+			break;
+		}
+		case 3: {
+			string billerUpdate;
+			do {
+				cout << "Nhap ten nguoi lap hoa don can chinh sua :" << endl;
+				getline(cin, billerUpdate);
+				if (isNumber(billerUpdate)) {
+					cout << "Ban nhap so, Moi nhap lai: ";
+				}
+			} while (isNumber(billerUpdate));
+			biller = billerUpdate;
+			updateHoaDonNew(pathFileUpdate, soHD, date, tenKH, tempList, biller);
+			goto mainUpdate;
+			break;
+		}
+		case 4: {
+			break;
+		}
+		default:
+			break;
+		}
+	}
 }
 
 void Shop::deleteHoaDon(string staticPath) {
@@ -737,18 +923,18 @@ void Shop::statisticalHoaDon(string staticPath) {
 	int total = 0;
 	ArrayList<string> dataFinally;
 	for (int i = 0; i < dataByDate.getSize(); i++) {
-		string name = split(dataByDate.getArray()[i], "-")[0] +"-" + split(dataByDate.getArray()[i], "-")[1] +"-"+ split(dataByDate.getArray()[i], "-")[2] + ":" + split(dataByDate.getArray()[i], "-")[3];
+		string name = split(dataByDate.getArray()[i], "-")[0] + "-" + split(dataByDate.getArray()[i], "-")[1] + "-" + split(dataByDate.getArray()[i], "-")[2] + ":" + split(dataByDate.getArray()[i], "-")[3];
 
 		positionFlag = 0;
 		for (int j = i + 1; j < dataByDate.getSize(); j++) {
 			string data1 = split(dataByDate.getArray()[i], "-")[0] + split(dataByDate.getArray()[i], "-")[1] + split(dataByDate.getArray()[i], "-")[2] + split(dataByDate.getArray()[i], "-")[3];
-			string data2 = split(dataByDate.getArray()[j], "-")[0] + split(dataByDate.getArray()[j], "-")[1]+ split(dataByDate.getArray()[j], "-")[2]+ split(dataByDate.getArray()[j], "-")[3];
+			string data2 = split(dataByDate.getArray()[j], "-")[0] + split(dataByDate.getArray()[j], "-")[1] + split(dataByDate.getArray()[j], "-")[2] + split(dataByDate.getArray()[j], "-")[3];
 			if (data1 == data2) {
 				positionFlag++;
 			}
 		}
-		
-		if (positionFlag == 0 ) {
+
+		if (positionFlag == 0) {
 			total += stoi(split(dataByDate.getArray()[i], "-")[4]);
 			dataFinally.add(name.append(":").append(to_string(total)));
 			total = 0;
@@ -756,11 +942,11 @@ void Shop::statisticalHoaDon(string staticPath) {
 		else {
 			total += stoi(split(dataByDate.getArray()[i], "-")[4]);
 		}
-		
+
 	}
 
 	for (int i = 0; i < dataFinally.getSize(); i++) {
-		cout << dataFinally.getArray()[i]<<endl;
+		cout << dataFinally.getArray()[i] << endl;
 	}
 }
 

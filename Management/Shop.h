@@ -36,7 +36,7 @@ public:
 	//======
 	//HoaDon
 	//======
-	void readFileHoaDonFromText(string path);
+	string readFileHoaDonFromText(string path);
 	void createHoaDon(string path);
 	void updateHoaDon(string path);
 	void deleteHoaDon(string path);
